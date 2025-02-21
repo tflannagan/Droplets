@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Droplets | Ty</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sankofa+Display&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Quicksand", sans-serif !important;
+            touch-action: none;
+        }
+
+        body {
+            background: #1a1a1a;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .main-container {
+            width: 100%;
+            height: 100vh;
+            max-height: 96vh;
+            background: #2a2a2a;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            padding: 10px;
+            gap: 0px;
+            position: relative;
+        }
+
+        .game-container {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            touch-action: none;
+            background: linear-gradient(135deg, #2e3b4e 0%, #4a5e7a 50%, #2e3b4e 100%);
+        }
+        
+        .side-panel {
+            position: relative;
+            background: #222;
+            border-radius: 15px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 100%;
+            width: 100px;
+            transition: all 0.3s ease;
+            overflow: visible;
+        }
+
+        .side-panel.collapsed {
+            width: 0;
+            padding: 0;
+            margin: 0;
+            gap: 0px;
+        }
+
+        .side-panel.collapsed .control-group {
+            display: none;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .side-panel.collapsed .toggle-panel {
+            right: calc(100% + 40px);
+        }
+
+        .side-panel.collapsed > * {
+            visibility: hidden;
+        }
+        
+        .toggle-panel {
+            position: absolute;
+            left: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #2a2a2a;
+            border: none;
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px 0 0 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            visibility: visible !important;
+        }
+
+        .side-panel.collapsed > *:not(.toggle-panel) {
+            display: none;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .toggle-panel:hover {
+            background: #333;
+        }
+
+        .toggle-panel svg {
+            transition: transform 0.3s ease;
+        }
+
+        .side-panel.collapsed .toggle-panel svg {
+            transform: rotate(180deg);
+        }
+        
+        .action-button {
+            background: #2a2a2a;
+            border: none;
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            min-height: 44px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .action-button svg {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.2s ease;
+        }
+
+        .action-button:hover {
+            background: #333;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .action-button:active {
+            transform: translateY(1px);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .side-panel.collapsed .control-group {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 80%;
+            margin: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                padding: 8px;
+                gap: 8px;
+            }
+
+            .side-panel {
+                position: fixed;
+                bottom: 10px;
+                right: 10px;
+                width: auto;
+                max-width: 100px;
+                height: auto;
+                max-height: 80vh;
+                z-index: 100;
+            }
+
+            .side-panel.collapsed {
+                transform: translateX(calc(100% + 20px));
+            }
+
+            .toggle-panel {
+                left: -35px;
+                padding: 8px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                flex-wrap: wrap;
+            }
+
+            .action-button {
+                flex: 1;
+                min-width: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="game-container">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        <div class="side-panel">
+            <button class="toggle-panel">
+                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+                    <path d="m321-80-71-71 329-329-329-329 71-71 400 400L321-80Z"/>
+                </svg>
+            </button>
+            <div class="control-group">
+                <div class="action-buttons">
+                    <button class="action-button" id="startStopBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+                            <path d="M320-200v-560l440 280-440 280Z"/>
+                        </svg>
+                    </button>
+                    <button class="action-button" id="resetBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+                            <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startStopBtn = document.getElementById('startStopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+    
+        let entities = [];
+        let isRunning = false;
+        let animationId;
+        let lastTap = 0;
+        let pressTimer = null;
+        let windLines = [];
+        const MAX_PARTICLES = 1000; // high limit for testing
+    
+        let isDragging = false;
+        let dragStart = null;
+
+        let bgShift = 0;
+
+        class Particle {
+            constructor(x, y, type = 'normal') {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 1;
+                this.vy = Math.random() * 1;
+                this.inLiquid = false;
+                this.ripples = [];
+                this.trail = [];
+                this.maxTrailLength = 2;
+                if (type === 'heavy') {
+                    this.mass = 10;
+                    this.radius = 5;
+                    this.vy = 2;
+                    this.color = `hsl(${Math.random() * 360}, 80%, 50%)`;
+                } else {
+                    this.mass = 5;
+                    this.radius = 3;
+                    this.color = `hsl(${Math.random() * 360}, 60%, 70%)`;
+                }
+            }
+
+            update() {
+                if (!this.inLiquid) {
+                    this.trail.unshift({ x: this.x, y: this.y });
+                    if (this.trail.length > this.maxTrailLength) {
+                        this.trail.pop();
+                    }
+                    
+                    this.vy += 0.2;
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.vx *= 0.98;
+                    this.vy *= 0.98;
+                    
+                    if (this.x < this.radius) {
+                        this.x = this.radius;
+                        this.vx *= -0.8;
+                        this.trail = [];
+                    }
+                    if (this.x > canvas.width - this.radius) {
+                        this.x = canvas.width - this.radius;
+                        this.vx *= -0.8;
+                        this.trail = [];
+                    }
+                    if (this.y > canvas.height - this.radius) {
+                        this.y = canvas.height - this.radius;
+                        this.vy *= -0.6;
+                        this.vx *= 0.9;
+                        this.trail = [];
+                    }
+                } else {
+                    this.trail = [];
+                }
+                this.ripples = this.ripples.filter(r => r.life > 0);
+                this.ripples.forEach(r => {
+                    r.radius += 0.5;
+                    r.life -= 0.05;
+                });
+            }
+        }
+    
+        class LiquidMass {
+            constructor(x, y, particles) {
+                this.particles = particles;
+                this.particles.forEach(p => p.inLiquid = true);
+                this.totalMass = particles.reduce((sum, p) => sum + p.mass, 0);
+                this.color = `hsl(${Math.random() * 360}, 60%, 70%)`;
+                this.cellSize = 2;
+                const container = canvas.parentElement;
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+                this.cols = Math.ceil(width / this.cellSize);
+                this.rows = Math.ceil(height / this.cellSize);
+                this.grid = new Array(this.cols * this.rows).fill(null).map(() => ({
+                    mass: 0,
+                    vx: 0,
+                    vy: 0,
+                    ripple: 0
+                }));
+                this.distributeMass();
+            }
+
+            distributeMass() {
+                let filledCells = Math.floor(this.totalMass / 5);
+                let remainder = this.totalMass % 5;
+                let currentCell = 0;
+                for (let i = this.cols * this.rows - 1; i >= 0 && currentCell < filledCells; i--) {
+                    this.grid[i].mass = 5;
+                    currentCell++;
+                }
+                if (remainder > 0 && currentCell < this.cols * this.rows) {
+                    this.grid[this.cols * this.rows - 1 - currentCell].mass = remainder;
+                }
+            }
+            
+            update() {
+                let newGrid = [];
+                for (let i = 0; i < this.cols * this.rows; i++) {
+                    newGrid[i] = { mass: this.grid[i].mass, vx: this.grid[i].vx * 0.9, vy: this.grid[i].vy * 0.9, ripple: this.grid[i].ripple * 0.95 };
+                }
+
+                for (let i = 0; i < this.grid.length; i++) {
+                    if (this.grid[i].mass > 0) {
+                        newGrid[i].vy += 0.15;
+                        let col = i % this.cols;
+                        let row = Math.floor(i / this.cols);
+
+                        if (row >= this.rows - 1) {
+                            newGrid[i].vy = 0;
+                            let left = col > 0 ? i - 1 : -1;
+                            let right = col < this.cols - 1 ? i + 1 : -1;
+                            let leftMass = left >= 0 ? newGrid[left].mass : Infinity;
+                            let rightMass = right >= 0 ? newGrid[right].mass : Infinity;
+
+                            if (leftMass < rightMass && leftMass < 5) {
+                                let flow = Math.min(newGrid[i].mass * 0.5, 5 - leftMass);
+                                newGrid[left].mass += flow;
+                                newGrid[left].vx -= 0.1;
+                                newGrid[i].mass -= flow;
+                            } else if (rightMass < 5) {
+                                let flow = Math.min(newGrid[i].mass * 0.5, 5 - rightMass);
+                                newGrid[right].mass += flow;
+                                newGrid[right].vx += 0.1;
+                                newGrid[i].mass -= flow;
+                            }
+                        } else {
+                            let newRow = Math.min(this.rows - 1, Math.floor(row + newGrid[i].vy));
+                            let newCol = Math.min(this.cols - 1, Math.max(0, Math.floor(col + newGrid[i].vx)));
+                            let newIndex = newRow * this.cols + newCol;
+
+                            if (newIndex !== i && newIndex < this.grid.length) {
+                                let targetMass = newGrid[newIndex].mass;
+                                if (targetMass < 5) {
+                                    let flow = Math.min(newGrid[i].mass, 5 - targetMass);
+                                    newGrid[newIndex].mass += flow;
+                                    newGrid[newIndex].vx = newGrid[i].vx;
+                                    newGrid[newIndex].vy = newGrid[i].vy;
+                                    newGrid[i].mass -= flow;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                this.grid = newGrid;
+                return this.grid.some(cell => cell.mass > 0);
+            }
+
+            addParticle(particle) {
+                this.particles.push(particle);
+                this.totalMass += particle.mass;
+                this.distributeMass();
+                let col = Math.floor(Math.max(0, Math.min(particle.x, canvas.width - 1)) / this.cellSize);
+                let row = Math.floor(Math.max(0, Math.min(particle.y, canvas.height - 1)) / this.cellSize);
+                let index = row * this.cols + col;
+                this.grid[index].vx += particle.vx * 0.5;
+                this.grid[index].vy += particle.vy * 0.5;
+                this.grid[index].ripple = 1;
+                let rippleForce = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
+                for (let r = row - 2; r <= row + 2; r++) {
+                    for (let c = col - 2; c <= col + 2; c++) {
+                        let rIndex = r * this.cols + c;
+                        if (rIndex >= 0 && rIndex < this.grid.length) {
+                            let dx = (c - col) * this.cellSize;
+                            let dy = (r - row) * this.cellSize;
+                            let dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist < 20 && dist > 0) {
+                                let ripple = rippleForce * (20 - dist) / 20;
+                                this.grid[rIndex].ripple = Math.max(this.grid[rIndex].ripple, ripple);
+                                this.grid[rIndex].vx += (dx / dist) * ripple * 0.2;
+                                this.grid[rIndex].vy += (dy / dist) * ripple * 0.2;
+                            }
+                        }
+                    }
+                }
+                particle.inLiquid = true;
+            }
+            
+            combine(other) {
+                this.particles = this.particles.concat(other.particles);
+                this.totalMass += other.totalMass;
+                this.distributeMass();
+                for (let i = 0; i < this.grid.length; i++) {
+                    if (other.grid[i].mass > 0) {
+                        this.grid[i].vx = (this.grid[i].vx + other.grid[i].vx) / 2;
+                        this.grid[i].vy = (this.grid[i].vy + other.grid[i].vy) / 2;
+                        this.grid[i].ripple = Math.max(this.grid[i].ripple, other.grid[i].ripple);
+                    }
+                }
+            }
+            
+            resize(newWidth, newHeight) {
+                this.cols = Math.ceil(newWidth / this.cellSize);
+                this.rows = Math.ceil(newHeight / this.cellSize);
+                this.grid = [];
+                for (let i = 0; i < this.cols * this.rows; i++) {
+                    this.grid[i] = { mass: 0, vx: 0, vy: 0, ripple: 0 };
+                }
+                this.distributeMass();
+            }
+        }
+                
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            let newWidth = container.clientWidth;
+            let newHeight = container.clientHeight;
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            entities.forEach(entity => {
+                if (entity instanceof LiquidMass) {
+                    entity.resize(newWidth, newHeight);
+                }
+            });
+        }
+            
+        function spawnInitialEntities() {
+            for (let i = 0; i < 10; i++) {
+                entities.push(new Particle(Math.random() * canvas.width, Math.random() * canvas.height * 0.2));
+            }
+        }
+    
+        function checkCondensation() {
+            let freeParticles = entities.filter(e => e instanceof Particle && !e.inLiquid);
+            for (let i = 0; i < freeParticles.length && entities.length < MAX_PARTICLES; i++) {
+                let clusters = [freeParticles[i]];
+                for (let j = 0; j < freeParticles.length; j++) {
+                    if (i !== j) {
+                        let dx = freeParticles[j].x - freeParticles[i].x;
+                        let dy = freeParticles[j].y - freeParticles[i].y;
+                        let dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 15) {
+                            clusters.push(freeParticles[j]);
+                        }
+                    }
+                }
+                if (clusters.length >= 3) {
+                    let avgX = clusters.reduce((sum, p) => sum + p.x, 0) / clusters.length;
+                    let avgY = clusters.reduce((sum, p) => sum + p.y, 0) / clusters.length;
+                    entities.push(new LiquidMass(avgX, avgY, clusters));
+                    clusters.forEach(p => {
+                        let index = entities.indexOf(p);
+                        if (index !== -1) entities.splice(index, 1);
+                    });
+                    return true;
+                }
+            }
+            return false;
+        }
+    
+        function updateEntities() {
+            if (!Array.isArray(entities)) return;
+    
+            if (Math.random() > 0.9 && entities.length < MAX_PARTICLES) {
+                entities.push(new Particle(Math.random() * canvas.width, 0));
+            }
+
+            for (let i = entities.length - 1; i >= 0; i--) {
+                const entity = entities[i];
+                if (!entity) continue;
+        
+                try {
+                    if (entity instanceof Particle && entity.update) {
+                        entity.update();
+                        handleParticleCollisions(entity, i);
+                    } else if (entity instanceof LiquidMass && entity.update) {
+                        handleLiquidMassUpdate(entity, i);
+                    }
+                } catch (error) {
+                    console.error('Error updating entity:', error);
+                    entities.splice(i, 1);
+                }
+            }
+
+            checkCondensation();
+
+            windLines = windLines.filter(line => line.opacity > 0);
+            windLines.forEach(line => line.opacity -= 0.05);
+        }        
+
+        function handleParticleCollisions(particle, index) {
+            for (let j = entities.length - 1; j >= 0; j--) {
+                const other = entities[j];
+                if (!other || index === j) continue;
+
+                if (other instanceof Particle && !particle.inLiquid && !other.inLiquid) {
+                    const dx = other.x - particle.x;
+                    const dy = other.y - particle.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const minDist = particle.radius + other.radius;
+            
+                    if (dist < minDist) {
+                        const angle = Math.atan2(dy, dx);
+                        const overlap = minDist - dist;
+                        particle.x -= Math.cos(angle) * overlap * 0.5;
+                        particle.y -= Math.sin(angle) * overlap * 0.5;
+                        other.x += Math.cos(angle) * overlap * 0.5;
+                        other.y += Math.sin(angle) * overlap * 0.5;
+                    }
+                }
+            }
+        }
+
+        function handleLiquidMassUpdate(liquidMass, index) {
+            if (!liquidMass.update()) {
+                entities.splice(index, 1);
+                return;
+            }
+
+            for (let j = entities.length - 1; j >= 0; j--) {
+                const other = entities[j];
+                if (!other || index === j) continue;
+
+                if (other instanceof Particle && !other.inLiquid) {
+                    const col = Math.floor(Math.max(0, Math.min(other.x, canvas.width - 1)) / liquidMass.cellSize);
+                    const row = Math.floor(Math.max(0, Math.min(other.y, canvas.height - 1)) / liquidMass.cellSize);
+                    const idx = row * liquidMass.cols + col;
+
+                    if (idx >= 0 && idx < liquidMass.grid.length && liquidMass.grid[idx].mass > 0) {
+                        liquidMass.addParticle(other);
+                        entities.splice(j, 1);
+                    }
+                } else if (other instanceof LiquidMass) {
+                    for (let k = 0; k < liquidMass.grid.length; k++) {
+                        if (liquidMass.grid[k].mass > 0 && other.grid[k]?.mass > 0) {
+                            liquidMass.combine(other);
+                            entities.splice(j, 1);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        function drawEntities() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            windLines.forEach(line => {
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(255, 255, 255, ${line.opacity})`;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 5]);
+                ctx.moveTo(line.startX, line.startY);
+                ctx.lineTo(line.endX, line.endY);
+                ctx.stroke();
+            });
+            ctx.setLineDash([]);
+
+            entities.forEach(entity => {
+                if (entity instanceof Particle && !entity.inLiquid) {
+                    if (entity.trail.length > 0) {
+                        ctx.strokeStyle = entity.color;
+                        ctx.lineWidth = entity.radius * 1.2;
+                        ctx.lineCap = 'round';
+                        ctx.lineJoin = 'round';
+                        ctx.beginPath();
+                        ctx.moveTo(entity.x, entity.y);
+                        entity.trail.forEach((point, i) => {
+                            ctx.globalAlpha = (1 - i / entity.maxTrailLength) * 0.3;
+                            ctx.lineTo(point.x, point.y);
+                        });
+                        ctx.stroke();
+                        ctx.globalAlpha = 1;
+                    }
+                    
+                    ctx.fillStyle = entity.color;
+                    ctx.beginPath();
+                    ctx.arc(entity.x, entity.y, entity.radius, 0, Math.PI * 2);
+                    ctx.fill();
+            
+                    entity.ripples.forEach(r => {
+                        ctx.strokeStyle = `rgba(${parseInt(entity.color.slice(4, -1).split(',')[0])}, ${parseInt(entity.color.slice(4, -1).split(',')[1])}, ${parseInt(entity.color.slice(4, -1).split(',')[2])}, ${r.life})`;
+                        ctx.beginPath();
+                        ctx.arc(entity.x, entity.y, r.radius, 0, Math.PI * 2);
+                        ctx.stroke();
+                    });
+                } else if (entity instanceof LiquidMass) {
+                    ctx.fillStyle = entity.color;
+                    for (let i = 0; i < entity.grid.length; i++) {
+                        if (entity.grid[i].mass > 0) {
+                            let col = i % entity.cols;
+                            let row = Math.floor(i / entity.cols);
+                            let x = col * entity.cellSize;
+                            let y = row * entity.cellSize;
+                            let rippleOffset = entity.grid[i].ripple * 2;
+                            ctx.fillRect(x - rippleOffset / 2, y - rippleOffset / 2, entity.cellSize + rippleOffset, entity.cellSize + rippleOffset);
+                        }
+                    }
+                }
+            });
+        }
+        
+        function gameLoop(timestamp) {
+            if (isRunning) {
+                try {
+                    if (entities && entities.length > 0) {
+                        entities = entities.filter(entity => entity && 
+                            (entity instanceof Particle || entity instanceof LiquidMass));
+                        updateEntities();
+                        drawEntities();
+                    }
+                } catch (error) {
+                    console.error('Error in game loop:', error);
+                    isRunning = false;
+                    return;
+                }
+                animationId = requestAnimationFrame(gameLoop);
+            }
+        }
+
+        canvas.addEventListener('mousedown', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (event.clientX - rect.left) * scaleX;
+            const y = (event.clientY - rect.top) * scaleY;
+
+            const now = Date.now();
+            if (entities.length < MAX_PARTICLES) {
+                if (now - lastTap < 300) {
+                    entities.push(new Particle(x, y, 'heavy'));
+                } else {
+                    pressTimer = setTimeout(() => {
+                        for (let i = 0; i < 5 && entities.length < MAX_PARTICLES; i++) {
+                            entities.push(new Particle(x + (Math.random() - 0.5) * 20, y + (Math.random() - 0.5) * 20));
+                        }
+                    }, 500);
+                }
+            }
+            lastTap = now;
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const x = (event.clientX - rect.left) * scaleX;
+                const y = (event.clientY - rect.top) * scaleY;
+                if (entities.length < MAX_PARTICLES) {
+                    entities.push(new Particle(x, y));
+                }
+            }
+        });      
+
+        canvas.addEventListener('mousedown', (event) => {
+            isDragging = true;
+            const rect = canvas.getBoundingClientRect();
+            dragStart = {
+                x: (event.clientX - rect.left) * (canvas.width / rect.width),
+                y: (event.clientY - rect.top) * (canvas.height / rect.height)
+            };
+        });
+
+        canvas.addEventListener('mousemove', (event) => {
+            if (isDragging) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const x = (event.clientX - rect.left) * scaleX;
+                const y = (event.clientY - rect.top) * scaleY;
+
+                const dx = x - dragStart.x;
+                const dy = y - dragStart.y;
+                const windStrength = Math.sqrt(dx * dx + dy * dy) * 0.05;
+
+                entities.forEach(entity => {
+                    if (entity instanceof Particle && !entity.inLiquid) {
+                        entity.vx += dx * 0.02;
+                        entity.vy += dy * 0.02;
+                    } else if (entity instanceof LiquidMass) {
+                        entity.grid.forEach(cell => {
+                            if (cell.mass > 0) {
+                                cell.vx += dx * 0.01;
+                                cell.vy += dy * 0.01;
+                                cell.ripple = Math.min(cell.ripple + windStrength * 0.1, 1);
+                            }
+                        });
+                    }
+                });
+
+                windLines.push({ startX: dragStart.x, startY: dragStart.y, endX: x, endY: y, opacity: 0.5 });
+                dragStart = { x, y };
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+            dragStart = null;
+        });
+
+        window.addEventListener('devicemotion', (event) => {
+            const accel = event.accelerationIncludingGravity;
+            if (accel && (Math.abs(accel.x) > 10 || Math.abs(accel.y) > 10)) {
+                entities.forEach(entity => {
+                    if (entity instanceof Particle && !entity.inLiquid) {
+                        entity.vx += (Math.random() - 0.5) * 2;
+                        entity.vy += (Math.random() - 0.5) * 2;
+                    } else if (entity instanceof LiquidMass) {
+                        entity.grid.forEach(cell => {
+                            if (cell.mass > 0) {
+                                cell.vx += (Math.random() - 0.5) * 0.5;
+                                cell.vy += (Math.random() - 0.5) * 0.5;
+                                cell.ripple = Math.min(cell.ripple + 0.3, 1);
+                            }
+                        });
+                    }
+                });
+            }
+        });
+
+        function updateBackground() {
+            bgShift += 0.1;
+            canvas.style.background = `linear-gradient(${135 + Math.sin(bgShift * 0.01) * 10}deg, #2e3b4e 0%, #4a5e7a 50%, #2e3b4e 100%)`;
+        }
+
+        function gameLoop(timestamp) {
+            if (isRunning) {
+                updateBackground();
+                updateEntities();
+                drawEntities();
+                animationId = requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function saveState() {
+            const minifiedState = {
+                e: entities.slice(0, MAX_PARTICLES).map(entity => { 
+                    if (entity instanceof Particle) {
+                        const state = {
+                            t: 'P',
+                            x: Math.round(entity.x),
+                            y: Math.round(entity.y),
+                            v: [Math.round(entity.vx * 100) / 100, Math.round(entity.vy * 100) / 100],
+                            m: entity.mass,
+                            r: entity.radius,
+                            c: entity.color,
+                            i: entity.inLiquid
+                        };
+                        if (entity.ripples.length > 0) {
+                            state.p = entity.ripples.map(r => [
+                                Math.round(r.radius),
+                                Math.round(r.life * 100) / 100
+                            ]);
+                        }
+                        return state;
+                    }
+                    if (entity instanceof LiquidMass) {
+                        return {
+                            t: 'L',
+                            p: entity.particles.map(p => ({
+                                x: Math.round(p.x),
+                                y: Math.round(p.y),
+                                v: [Math.round(p.vx * 100) / 100, Math.round(p.vy * 100) / 100],
+                                m: p.mass,
+                                r: p.radius,
+                                c: p.color,
+                                i: true
+                            })),
+                            g: entity.grid.map(g => g.mass > 0 ? [
+                                g.mass,
+                                Math.round(g.vx * 100) / 100,
+                                Math.round(g.vy * 100) / 100,
+                                Math.round(g.ripple * 100) / 100
+                            ] : 0).filter(g => g !== 0),
+                            s: entity.cellSize,
+                            d: [entity.cols, entity.rows],
+                            m: entity.totalMass,
+                            c: entity.color
+                        };
+                    }
+                    return null;
+                }).filter(Boolean),
+                r: isRunning
+            };
+            try {
+                localStorage.setItem('cosmicCascadeState', JSON.stringify(minifiedState));
+            } catch (error) {
+                console.warn('Failed to save state, continuing without saving:', error);
+            }
+        }
+
+        function loadState() {
+            try {
+                const savedState = localStorage.getItem('cosmicCascadeState');
+                if (!savedState) return false;
+                const state = JSON.parse(savedState);
+                if (!state || !state.e || !Array.isArray(state.e)) return false;
+
+                const container = canvas.parentElement;
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+
+                entities = state.e.map(data => {
+                    if (data.t === 'P') {
+                        const p = new Particle(data.x, data.y, data.m > 5 ? 'heavy' : 'normal');
+                        p.vx = data.v[0];
+                        p.vy = data.v[1];
+                        p.mass = data.m;
+                        p.radius = data.r;
+                        p.color = data.c;
+                        p.inLiquid = data.i;
+                        p.ripples = data.p ? data.p.map(r => ({
+                            radius: r[0],
+                            life: r[1]
+                        })) : [];
+                        return p;
+                    }
+                    if (data.t === 'L') {
+                        const particles = data.p.map(p => {
+                            const particle = new Particle(p.x, p.y, p.m > 5 ? 'heavy' : 'normal');
+                            particle.vx = p.v[0];
+                            particle.vy = p.v[1];
+                            particle.mass = p.m;
+                            particle.radius = p.r;
+                            particle.color = p.c;
+                            particle.inLiquid = true;
+                            return particle;
+                        });
+                        const liquid = new LiquidMass(0, 0, particles);
+                        liquid.color = data.c;
+                        liquid.cellSize = data.s;
+                        liquid.cols = Math.ceil(canvas.width / liquid.cellSize);
+                        liquid.rows = Math.ceil(canvas.height / liquid.cellSize);
+                        liquid.totalMass = data.m;
+                        const newGrid = new Array(liquid.cols * liquid.rows).fill(null)
+                            .map(() => ({ mass: 0, vx: 0, vy: 0, ripple: 0 }));
+                        data.g.forEach((cell, i) => {
+                            if (i < newGrid.length) {
+                                newGrid[i].mass = cell[0];
+                                newGrid[i].vx = cell[1];
+                                newGrid[i].vy = cell[2];
+                                newGrid[i].ripple = cell[3];
+                            }
+                        });
+                        liquid.grid = newGrid;
+                        return liquid;
+                    }
+                    return null;
+                }).filter(Boolean);
+
+                if (entities.length === 0) return false;
+                isRunning = Boolean(state.r);
+                if (isRunning) {
+                    const playButton = startStopBtn.querySelector('svg');
+                    playButton.innerHTML = '<path d="M520-200h80v-560h-80v560Zm-160 0h80v-560h-80v560Z"/>';
+                    startStopBtn.style.backgroundColor = '#333';
+                    requestAnimationFrame(gameLoop);
+                }
+                return true;
+            } catch (error) {
+                console.error('Failed to load state:', error);
+                return false;
+            }
+        }
+
+        function initializeGame() {
+            resizeCanvas();
+            const loaded = loadState();
+            if (!loaded) {
+                entities = [];
+                spawnInitialEntities();
+            }
+        }
+
+        window.addEventListener('resize', () => resizeCanvas());
+            
+        function updatePanelVisibility() {
+            const sidePanel = document.querySelector('.side-panel');
+            const isCollapsed = sidePanel.classList.contains('collapsed');
+            const controls = document.querySelectorAll('.control-group');
+            const isMobile = window.innerWidth <= 768;
+    
+            requestAnimationFrame(() => {
+                sidePanel.style.width = isCollapsed ? '0' : '100px';
+                sidePanel.style.padding = isCollapsed ? '0' : '10px';
+        
+                controls.forEach(element => {
+                    element.style.display = isCollapsed ? 'none' : 'flex';
+                    element.style.opacity = isCollapsed ? '0' : '1';
+                    element.style.pointerEvents = isCollapsed ? 'none' : 'all';
+                });
+
+                if (isMobile) {
+                    sidePanel.style.position = 'fixed';
+                    sidePanel.style.right = '10px';
+                    sidePanel.style.bottom = '10px';
+                    sidePanel.style.top = 'auto';
+                    sidePanel.style.transform = isCollapsed ? 'translateX(calc(100% + 10px))' : 'translateX(0)';
+                } else {
+                    sidePanel.style.position = 'relative';
+                    sidePanel.style.right = '0';
+                    sidePanel.style.top = '0';
+                    sidePanel.style.bottom = '0';
+                    sidePanel.style.transform = 'none';
+                }
+        
+                resizeCanvas();
+            });
+        }
+        
+        const togglePanel = document.querySelector('.toggle-panel');
+        const sidePanel = document.querySelector('.side-panel');
+    
+        togglePanel.addEventListener('click', () => {
+            sidePanel.classList.toggle('collapsed');
+            let svg = togglePanel.querySelector('svg');
+            svg.style.transform = sidePanel.classList.contains('collapsed') ? 'rotate(180deg)' : 'rotate(0deg)';
+            requestAnimationFrame(() => updatePanelVisibility());
+        });
+    
+        startStopBtn.addEventListener('click', () => {
+            isRunning = !isRunning;
+            let svg = startStopBtn.querySelector('svg');
+            svg.innerHTML = isRunning 
+                ? '<path d="M520-200h80v-560h-80v560Zm-160 0h80v-560h-80v560Z"/>'
+                : '<path d="M320-200v-560l440 280-440 280Z"/>';
+            startStopBtn.style.backgroundColor = isRunning ? '#333' : '#2a2a2a';
+            if (isRunning) {
+                requestAnimationFrame(gameLoop);
+            }
+        });
+    
+        resetBtn.addEventListener('click', () => {
+            resetBtn.style.transform = 'scale(0.95)';
+            setTimeout(() => resetBtn.style.transform = 'scale(1)', 100);
+            entities = [];
+            localStorage.removeItem('cosmicCascadeState');
+            spawnInitialEntities();
+        });
+    
+        let saveInterval = setInterval(saveState, 5000);
+
+        window.addEventListener('beforeunload', () => {
+            clearInterval(saveInterval);
+            saveState();
+        });
+    
+        initializeGame();
+    </script>
+</body>
+</html>
